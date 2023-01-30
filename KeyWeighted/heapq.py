@@ -127,22 +127,22 @@ From all times, sorting has always been a Great Art! :-)
 __all__ = ['heappush', 'heappop', 'heapify', 'heapreplace', 'merge',
            'nlargest', 'nsmallest', 'heappushpop']
 
-def heappush(heap, item):
+def heappush(heap, item, key = None):
     """Push item onto heap, maintaining the heap invariant."""
     heap.append(item)
-    _siftdown(heap, 0, len(heap)-1)
+    _siftdown(heap, 0, len(heap)-1, key)
 
-def heappop(heap):
+def heappop(heap, key = None):
     """Pop the smallest item off the heap, maintaining the heap invariant."""
     lastelt = heap.pop()    # raises appropriate IndexError if heap is empty
     if heap:
         returnitem = heap[0]
         heap[0] = lastelt
-        _siftup(heap, 0)
+        _siftup(heap, 0, key)
         return returnitem
     return lastelt
 
-def heapreplace(heap, item):
+def heapreplace(heap, item, key = None):
     """Pop and return the current smallest value, and add the new item.
 
     This is more efficient than heappop() followed by heappush(), and can be
@@ -155,17 +155,17 @@ def heapreplace(heap, item):
     """
     returnitem = heap[0]    # raises appropriate IndexError if heap is empty
     heap[0] = item
-    _siftup(heap, 0)
+    _siftup(heap, 0, key)
     return returnitem
 
-def heappushpop(heap, item):
+def heappushpop(heap, item, key = None):
     """Fast version of a heappush followed by a heappop."""
     if heap and heap[0] < item:
         item, heap[0] = heap[0], item
-        _siftup(heap, 0)
+        _siftup(heap, 0, key)
     return item
 
-def heapify(x):
+def heapify(x, key = None):
     """Transform list into a heap, in-place, in O(len(x)) time."""
     n = len(x)
     # Transform bottom-up.  The largest index there's any point to looking at
@@ -174,36 +174,50 @@ def heapify(x):
     # j-1 is the largest, which is n//2 - 1.  If n is odd = 2*j+1, this is
     # (2*j+1-1)/2 = j so j-1 is the largest, and that's again n//2-1.
     for i in reversed(range(n//2)):
-        _siftup(x, i)
+        _siftup(x, i, key)
 
-def _heappop_max(heap):
+def _heappop_max(heap, key = None):
     """Maxheap version of a heappop."""
     lastelt = heap.pop()    # raises appropriate IndexError if heap is empty
     if heap:
         returnitem = heap[0]
         heap[0] = lastelt
-        _siftup_max(heap, 0)
+        _siftup_max(heap, 0, key)
         return returnitem
     return lastelt
 
-def _heapreplace_max(heap, item):
+def _heapreplace_max(heap, item, key = None):
     """Maxheap version of a heappop followed by a heappush."""
     returnitem = heap[0]    # raises appropriate IndexError if heap is empty
     heap[0] = item
-    _siftup_max(heap, 0)
+    _siftup_max(heap, 0, key)
     return returnitem
 
-def _heapify_max(x):
+def _heapify_max(x, key = None):
     """Transform list into a maxheap, in-place, in O(len(x)) time."""
     n = len(x)
     for i in reversed(range(n//2)):
-        _siftup_max(x, i)
+        _siftup_max(x, i, key)
 
 # 'heap' is a heap at all indices >= startpos, except possibly for pos.  pos
 # is the index of a leaf with a possibly out-of-order value.  Restore the
 # heap invariant.
-def _siftdown(heap, startpos, pos):
+def _siftdown(heap, startpos, pos, key = None):
     newitem = heap[pos]
+
+    if not key is None:
+        keynewitem = key(newitem)
+        while pos > startpos:
+            parentpos = (pos - 1) >> 1
+            parent = heap[parentpos]
+            if keynewitem < key(parent):
+                heap[pos] = parent
+                pos = parentpos
+                continue
+            break
+        heap[pos] = newitem
+        return
+
     # Follow the path to the root, moving parents down until finding a place
     # newitem fits.
     while pos > startpos:
@@ -255,10 +269,29 @@ def _siftdown(heap, startpos, pos):
 # heappop() compares):  list.sort() is (unsurprisingly!) more efficient
 # for sorting.
 
-def _siftup(heap, pos):
+def _siftup(heap, pos, key = None):
     endpos = len(heap)
     startpos = pos
     newitem = heap[pos]
+
+    if not key is None:
+        # Bubble up the smaller child until hitting a leaf.
+        childpos = 2*pos + 1    # leftmost child position
+        while childpos < endpos:
+            # Set childpos to index of smaller child.
+            rightpos = childpos + 1
+            if rightpos < endpos and not key(heap[childpos]) < key(heap[rightpos]):
+                childpos = rightpos
+            # Move the smaller child up.
+            heap[pos] = heap[childpos]
+            pos = childpos
+            childpos = 2*pos + 1
+        # The leaf at pos is empty now.  Put newitem there, and bubble it up
+        # to its final resting place (by sifting its parents down).
+        heap[pos] = newitem
+        _siftdown(heap, startpos, pos, key)
+        return
+
     # Bubble up the smaller child until hitting a leaf.
     childpos = 2*pos + 1    # leftmost child position
     while childpos < endpos:
@@ -275,9 +308,25 @@ def _siftup(heap, pos):
     heap[pos] = newitem
     _siftdown(heap, startpos, pos)
 
-def _siftdown_max(heap, startpos, pos):
+def _siftdown_max(heap, startpos, pos, key = None):
     'Maxheap variant of _siftdown'
     newitem = heap[pos]
+
+    if not key is None:
+        keynewitem = key(newitem)
+        # Follow the path to the root, moving parents down until finding a place
+        # newitem fits.
+        while pos > startpos:
+            parentpos = (pos - 1) >> 1
+            parent = heap[parentpos]
+            if key(parent) < keynewitem:
+                heap[pos] = parent
+                pos = parentpos
+                continue
+            break
+        heap[pos] = newitem
+        return
+
     # Follow the path to the root, moving parents down until finding a place
     # newitem fits.
     while pos > startpos:
@@ -290,11 +339,30 @@ def _siftdown_max(heap, startpos, pos):
         break
     heap[pos] = newitem
 
-def _siftup_max(heap, pos):
+def _siftup_max(heap, pos, key = None):
     'Maxheap variant of _siftup'
     endpos = len(heap)
     startpos = pos
     newitem = heap[pos]
+
+    if not key is None:
+        # Bubble up the larger child until hitting a leaf.
+        childpos = 2*pos + 1    # leftmost child position
+        while childpos < endpos:
+            # Set childpos to index of larger child.
+            rightpos = childpos + 1
+            if rightpos < endpos and not key(heap[rightpos]) < key(heap[childpos]):
+                childpos = rightpos
+            # Move the larger child up.
+            heap[pos] = heap[childpos]
+            pos = childpos
+            childpos = 2*pos + 1
+        # The leaf at pos is empty now.  Put newitem there, and bubble it up
+        # to its final resting place (by sifting its parents down).
+        heap[pos] = newitem
+        _siftdown_max(heap, startpos, pos, key)
+        return
+
     # Bubble up the larger child until hitting a leaf.
     childpos = 2*pos + 1    # leftmost child position
     while childpos < endpos:
@@ -576,23 +644,6 @@ def nlargest(n, iterable, key=None):
     result.sort(reverse=True)
     return [elem for (k, order, elem) in result]
 
-# If available, use C implementation
-try:
-    from _heapq import *
-except ImportError:
-    pass
-try:
-    from _heapq import _heapreplace_max
-except ImportError:
-    pass
-try:
-    from _heapq import _heapify_max
-except ImportError:
-    pass
-try:
-    from _heapq import _heappop_max
-except ImportError:
-    pass
 
 
 if __name__ == "__main__":
