@@ -5,6 +5,11 @@ a = [-1, -2, -3, -4, -5, -6, -7]
 print(kbisect.bisect_left(a, abs(-5), key = abs))
 # 4
 
+print(kbisect.bisect_left(None, 100, lo=0, hi=100, key = lambda x: int(x // 2) ** 2))
+print(kbisect.bisect_right(None, 100, lo=0, hi=100, key = lambda x: int(x // 2) ** 2))
+# 20
+# 22
+
 # ---------------------- heapq ----------------------- #
 
 import KeyWeighted.heapq as kheapq
