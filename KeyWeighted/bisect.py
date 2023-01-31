@@ -30,6 +30,8 @@ def bisect_right(a: Union[List[T], None], x: T, lo: int = 0, hi: Union[int, None
 
     Optional args lo (default 0) and hi (default len(a)) bound the
     slice of a to be searched.
+
+    If a is None, a is considered list(range(lo, hi)).
     """
 
     if a is None:
@@ -90,6 +92,8 @@ def bisect_left(a: Union[List[T], None], x: T, lo: int = 0, hi: Union[int, None]
 
     Optional args lo (default 0) and hi (default len(a)) bound the
     slice of a to be searched.
+
+    If a is None, a is considered list(range(lo, hi)).
     """
 
     if a is None:
